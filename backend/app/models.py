@@ -26,7 +26,7 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
-    full_name: str | None = Field(default=None, max_length=255)
+    full_name: Optional[str] = Field(default=None, max_length=255)
 
 
 # Properties to receive via API on creation
@@ -37,18 +37,18 @@ class UserCreate(UserBase):
 class UserRegister(SQLModel):
     email: EmailStr = Field(max_length=255)
     password: str = Field(min_length=8, max_length=40)
-    full_name: str | None = Field(default=None, max_length=255)
+    full_name: Optional[str] = Field(default=None, max_length=255)
 
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
-    password: str | None = Field(default=None, min_length=8, max_length=40)
+    email: Optional[EmailStr] = Field(default=None, max_length=255)  # type: ignore
+    password: Optional[str] = Field(default=None, min_length=8, max_length=40)
 
 
 class UserUpdateMe(SQLModel):
-    full_name: str | None = Field(default=None, max_length=255)
-    email: EmailStr | None = Field(default=None, max_length=255)
+    full_name: Optional[str] = Field(default=None, max_length=255)
+    email: Optional[EmailStr] = Field(default=None, max_length=255)
 
 
 class UpdatePassword(SQLModel):
@@ -63,11 +63,11 @@ class User(UserBase, table=True):
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
     
     # New relationships
-    profile: "UserProfile" | None = Relationship(back_populates="user", cascade_delete=True)
+    profile: Optional["UserProfile"] = Relationship(back_populates="user", cascade_delete=True)
     resumes: list["UserResume"] = Relationship(back_populates="user", cascade_delete=True)
     repos: list["Repo"] = Relationship(back_populates="owner", cascade_delete=True)
     owned_teams: list["Team"] = Relationship(back_populates="owner", cascade_delete=True)
-    teams: list["Team"] = Relationship(back_populates="members", link_table="team_member")
+    teams: list["Team"] = Relationship(back_populates="members", link_model=TeamMember)
     ideas: list["Idea"] = Relationship(back_populates="creator", cascade_delete=True)
     shortlists: list["Shortlist"] = Relationship(back_populates="user", cascade_delete=True)
     deep_dive_versions: list["DeepDiveVersion"] = Relationship(back_populates="author", cascade_delete=True)
@@ -76,10 +76,10 @@ class User(UserBase, table=True):
     lens_insights: list["LensInsight"] = Relationship(back_populates="author", cascade_delete=True)
     vc_thesis_comparisons: list["VCThesisComparison"] = Relationship(back_populates="author", cascade_delete=True)
     investor_decks: list["InvestorDeck"] = Relationship(back_populates="author", cascade_delete=True)
-    idea_collaborations: list["IdeaCollaborator"] = Relationship(back_populates="user", cascade_delete=True)
-    sent_idea_invitations: list["IdeaCollaborator"] = Relationship(back_populates="inviter", cascade_delete=True)
-    proposed_changes: list["IdeaChangeProposal"] = Relationship(back_populates="proposer", cascade_delete=True)
-    reviewed_changes: list["IdeaChangeProposal"] = Relationship(back_populates="reviewer", cascade_delete=True)
+    idea_collaborations: list["IdeaCollaborator"] = Relationship(back_populates="user", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[IdeaCollaborator.user_id]"})
+    sent_idea_invitations: list["IdeaCollaborator"] = Relationship(back_populates="inviter", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[IdeaCollaborator.invited_by]"})
+    proposed_changes: list["IdeaChangeProposal"] = Relationship(back_populates="proposer", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[IdeaChangeProposal.proposer_id]"})
+    reviewed_changes: list["IdeaChangeProposal"] = Relationship(back_populates="reviewer", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[IdeaChangeProposal.reviewer_id]"})
     comments: list["Comment"] = Relationship(back_populates="author", cascade_delete=True)
     sent_invites: list["Invite"] = Relationship(back_populates="inviter", cascade_delete=True)
     idea_qnas: list["IdeaVersionQnA"] = Relationship(back_populates="author", cascade_delete=True)
@@ -106,7 +106,7 @@ class UsersPublic(SQLModel):
 # Shared properties
 class ItemBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=255)
 
 
 # Properties to receive on item creation
@@ -116,7 +116,7 @@ class ItemCreate(ItemBase):
 
 # Properties to receive on item update
 class ItemUpdate(ItemBase):
-    title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)  # type: ignore
 
 
 # Database model, database table inferred from class name
@@ -125,7 +125,7 @@ class Item(ItemBase, table=True):
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    owner: User | None = Relationship(back_populates="items")
+    owner: Optional[User] = Relationship(back_populates="items")
 
 
 # Properties to return via API, id is always required
@@ -152,7 +152,7 @@ class Token(SQLModel):
 
 # Contents of JWT token
 class TokenPayload(SQLModel):
-    sub: str | None = None
+    sub: Optional[str] = None
 
 
 class NewPassword(SQLModel):
@@ -164,12 +164,12 @@ class NewPassword(SQLModel):
 
 # User Profile model
 class UserProfileBase(SQLModel):
-    bio: str | None = Field(default=None, max_length=1000)
-    location: str | None = Field(default=None, max_length=255)
-    website: str | None = Field(default=None, max_length=255)
-    linkedin_url: str | None = Field(default=None, max_length=255)
-    twitter_url: str | None = Field(default=None, max_length=255)
-    github_url: str | None = Field(default=None, max_length=255)
+    bio: Optional[str] = Field(default=None, max_length=1000)
+    location: Optional[str] = Field(default=None, max_length=255)
+    website: Optional[str] = Field(default=None, max_length=255)
+    linkedin_url: Optional[str] = Field(default=None, max_length=255)
+    twitter_url: Optional[str] = Field(default=None, max_length=255)
+    github_url: Optional[str] = Field(default=None, max_length=255)
 
 
 class UserProfileCreate(UserProfileBase):
@@ -186,7 +186,7 @@ class UserProfile(UserProfileBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="profile")
+    user: Optional[User] = Relationship(back_populates="profile")
 
 
 class UserProfilePublic(UserProfileBase):
@@ -208,9 +208,9 @@ class UserResumeCreate(UserResumeBase):
 
 
 class UserResumeUpdate(UserResumeBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    is_public: bool | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    is_public: Optional[bool] = Field(default=None)
 
 
 class UserResume(UserResumeBase, table=True):
@@ -219,7 +219,7 @@ class UserResume(UserResumeBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="resumes")
+    user: Optional[User] = Relationship(back_populates="resumes")
 
 
 class UserResumePublic(UserResumeBase):
@@ -232,10 +232,10 @@ class UserResumePublic(UserResumeBase):
 # Repository model
 class RepoBase(SQLModel):
     name: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
+    description: Optional[str] = Field(default=None, max_length=1000)
     url: str = Field(max_length=500)
     is_private: bool = Field(default=False)
-    language: str | None = Field(default=None, max_length=100)
+    language: Optional[str] = Field(default=None, max_length=100)
     stars: int = Field(default=0)
     forks: int = Field(default=0)
 
@@ -245,13 +245,13 @@ class RepoCreate(RepoBase):
 
 
 class RepoUpdate(RepoBase):
-    name: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
-    url: str | None = Field(default=None, max_length=500)
-    is_private: bool | None = Field(default=None)
-    language: str | None = Field(default=None, max_length=100)
-    stars: int | None = Field(default=None)
-    forks: int | None = Field(default=None)
+    name: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    url: Optional[str] = Field(default=None, max_length=500)
+    is_private: Optional[bool] = Field(default=None)
+    language: Optional[str] = Field(default=None, max_length=100)
+    stars: Optional[int] = Field(default=None)
+    forks: Optional[int] = Field(default=None)
 
 
 class Repo(RepoBase, table=True):
@@ -260,7 +260,7 @@ class Repo(RepoBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    owner: User | None = Relationship(back_populates="repos")
+    owner: Optional[User] = Relationship(back_populates="repos")
 
 
 class RepoPublic(RepoBase):
@@ -273,7 +273,7 @@ class RepoPublic(RepoBase):
 # Team model
 class TeamBase(SQLModel):
     name: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
+    description: Optional[str] = Field(default=None, max_length=1000)
     is_public: bool = Field(default=True)
 
 
@@ -282,9 +282,9 @@ class TeamCreate(TeamBase):
 
 
 class TeamUpdate(TeamBase):
-    name: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
-    is_public: bool | None = Field(default=None)
+    name: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    is_public: Optional[bool] = Field(default=None)
 
 
 class Team(TeamBase, table=True):
@@ -293,8 +293,8 @@ class Team(TeamBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    owner: User | None = Relationship(back_populates="owned_teams")
-    members: list["User"] = Relationship(back_populates="teams", link_table="team_member")
+    owner: Optional[User] = Relationship(back_populates="owned_teams")
+    members: list["User"] = Relationship(back_populates="teams", link_model=TeamMember)
     ideas: list["Idea"] = Relationship(back_populates="team")
     invites: list["Invite"] = Relationship(back_populates="team")
 
@@ -312,7 +312,7 @@ class IdeaBase(SQLModel):
     description: str = Field(sa_column=Column(Text))
     status: str = Field(default="draft", max_length=50)  # draft, published, archived
     is_public: bool = Field(default=False)
-    tags: str | None = Field(default=None, max_length=500)  # JSON string of tags
+    tags: Optional[str] = Field(default=None, max_length=500)  # JSON string of tags
 
 
 class IdeaCreate(IdeaBase):
@@ -320,22 +320,22 @@ class IdeaCreate(IdeaBase):
 
 
 class IdeaUpdate(IdeaBase):
-    title: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None)
-    status: str | None = Field(default=None, max_length=50)
-    is_public: bool | None = Field(default=None)
-    tags: str | None = Field(default=None, max_length=500)
+    title: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None)
+    status: Optional[str] = Field(default=None, max_length=50)
+    is_public: Optional[bool] = Field(default=None)
+    tags: Optional[str] = Field(default=None, max_length=500)
 
 
 class Idea(IdeaBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     creator_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    team_id: uuid.UUID | None = Field(foreign_key="team.id", nullable=True, ondelete="SET NULL")
+    team_id: Optional[uuid.UUID] = Field(foreign_key="team.id", nullable=True, ondelete="SET NULL")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    creator: User | None = Relationship(back_populates="ideas")
-    team: Team | None = Relationship(back_populates="ideas")
+    creator: Optional[User] = Relationship(back_populates="ideas")
+    team: Optional[Team] = Relationship(back_populates="ideas")
     collaborators: list["IdeaCollaborator"] = Relationship(back_populates="idea")
     change_proposals: list["IdeaChangeProposal"] = Relationship(back_populates="idea")
     comments: list["Comment"] = Relationship(back_populates="idea")
@@ -348,14 +348,14 @@ class Idea(IdeaBase, table=True):
     version_qnas: list["IdeaVersionQnA"] = Relationship(back_populates="idea")
     iterations: list["Iteration"] = Relationship(back_populates="idea")
     invites: list["Invite"] = Relationship(back_populates="idea")
-    shortlists: list["Shortlist"] = Relationship(back_populates="ideas", link_table="shortlist_idea")
+    shortlists: list["Shortlist"] = Relationship(back_populates="ideas", link_model=ShortlistIdea)
     iterating_records: list["Iterating"] = Relationship(back_populates="idea")
 
 
 class IdeaPublic(IdeaBase):
     id: uuid.UUID
     creator_id: uuid.UUID
-    team_id: uuid.UUID | None
+    team_id: Optional[uuid.UUID]
     created_at: datetime
     updated_at: datetime
 
@@ -363,7 +363,7 @@ class IdeaPublic(IdeaBase):
 # Shortlist model
 class ShortlistBase(SQLModel):
     name: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
+    description: Optional[str] = Field(default=None, max_length=1000)
     is_public: bool = Field(default=False)
 
 
@@ -372,9 +372,9 @@ class ShortlistCreate(ShortlistBase):
 
 
 class ShortlistUpdate(ShortlistBase):
-    name: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None, max_length=1000)
-    is_public: bool | None = Field(default=None)
+    name: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    is_public: Optional[bool] = Field(default=None)
 
 
 class Shortlist(ShortlistBase, table=True):
@@ -383,8 +383,8 @@ class Shortlist(ShortlistBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="shortlists")
-    ideas: list["Idea"] = Relationship(back_populates="shortlists", link_table="shortlist_idea")
+    user: Optional[User] = Relationship(back_populates="shortlists")
+    ideas: list["Idea"] = Relationship(back_populates="shortlists", link_model=ShortlistIdea)
 
 
 class ShortlistPublic(ShortlistBase):
@@ -407,10 +407,10 @@ class DeepDiveVersionCreate(DeepDiveVersionBase):
 
 
 class DeepDiveVersionUpdate(DeepDiveVersionBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    version: int | None = Field(default=None)
-    status: str | None = Field(default=None, max_length=50)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    version: Optional[int] = Field(default=None)
+    status: Optional[str] = Field(default=None, max_length=50)
 
 
 class DeepDiveVersion(DeepDiveVersionBase, table=True):
@@ -420,8 +420,8 @@ class DeepDiveVersion(DeepDiveVersionBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="deep_dive_versions")
-    author: User | None = Relationship(back_populates="deep_dive_versions")
+    idea: Optional[Idea] = Relationship(back_populates="deep_dive_versions")
+    author: Optional[User] = Relationship(back_populates="deep_dive_versions")
 
 
 class DeepDiveVersionPublic(DeepDiveVersionBase):
@@ -436,9 +436,9 @@ class DeepDiveVersionPublic(DeepDiveVersionBase):
 class CaseStudyBase(SQLModel):
     title: str = Field(max_length=255)
     content: str = Field(sa_column=Column(Text))
-    company_name: str | None = Field(default=None, max_length=255)
-    industry: str | None = Field(default=None, max_length=100)
-    funding_stage: str | None = Field(default=None, max_length=100)
+    company_name: Optional[str] = Field(default=None, max_length=255)
+    industry: Optional[str] = Field(default=None, max_length=100)
+    funding_stage: Optional[str] = Field(default=None, max_length=100)
 
 
 class CaseStudyCreate(CaseStudyBase):
@@ -446,11 +446,11 @@ class CaseStudyCreate(CaseStudyBase):
 
 
 class CaseStudyUpdate(CaseStudyBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    company_name: str | None = Field(default=None, max_length=255)
-    industry: str | None = Field(default=None, max_length=100)
-    funding_stage: str | None = Field(default=None, max_length=100)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    company_name: Optional[str] = Field(default=None, max_length=255)
+    industry: Optional[str] = Field(default=None, max_length=100)
+    funding_stage: Optional[str] = Field(default=None, max_length=100)
 
 
 class CaseStudy(CaseStudyBase, table=True):
@@ -460,8 +460,8 @@ class CaseStudy(CaseStudyBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="case_studies")
-    author: User | None = Relationship(back_populates="case_studies")
+    idea: Optional[Idea] = Relationship(back_populates="case_studies")
+    author: Optional[User] = Relationship(back_populates="case_studies")
 
 
 class CaseStudyPublic(CaseStudyBase):
@@ -476,9 +476,9 @@ class CaseStudyPublic(CaseStudyBase):
 class MarketSnapshotBase(SQLModel):
     title: str = Field(max_length=255)
     content: str = Field(sa_column=Column(Text))
-    market_size: str | None = Field(default=None, max_length=255)
-    growth_rate: str | None = Field(default=None, max_length=100)
-    key_players: str | None = Field(default=None, max_length=1000)
+    market_size: Optional[str] = Field(default=None, max_length=255)
+    growth_rate: Optional[str] = Field(default=None, max_length=100)
+    key_players: Optional[str] = Field(default=None, max_length=1000)
 
 
 class MarketSnapshotCreate(MarketSnapshotBase):
@@ -486,11 +486,11 @@ class MarketSnapshotCreate(MarketSnapshotBase):
 
 
 class MarketSnapshotUpdate(MarketSnapshotBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    market_size: str | None = Field(default=None, max_length=255)
-    growth_rate: str | None = Field(default=None, max_length=100)
-    key_players: str | None = Field(default=None, max_length=1000)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    market_size: Optional[str] = Field(default=None, max_length=255)
+    growth_rate: Optional[str] = Field(default=None, max_length=100)
+    key_players: Optional[str] = Field(default=None, max_length=1000)
 
 
 class MarketSnapshot(MarketSnapshotBase, table=True):
@@ -500,8 +500,8 @@ class MarketSnapshot(MarketSnapshotBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="market_snapshots")
-    author: User | None = Relationship(back_populates="market_snapshots")
+    idea: Optional[Idea] = Relationship(back_populates="market_snapshots")
+    author: Optional[User] = Relationship(back_populates="market_snapshots")
 
 
 class MarketSnapshotPublic(MarketSnapshotBase):
@@ -517,7 +517,7 @@ class LensInsightBase(SQLModel):
     title: str = Field(max_length=255)
     content: str = Field(sa_column=Column(Text))
     lens_type: str = Field(max_length=100)  # e.g., "technical", "market", "financial"
-    insights: str | None = Field(default=None, sa_column=Column(Text))
+    insights: Optional[str] = Field(default=None, sa_column=Column(Text))
 
 
 class LensInsightCreate(LensInsightBase):
@@ -525,10 +525,10 @@ class LensInsightCreate(LensInsightBase):
 
 
 class LensInsightUpdate(LensInsightBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    lens_type: str | None = Field(default=None, max_length=100)
-    insights: str | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    lens_type: Optional[str] = Field(default=None, max_length=100)
+    insights: Optional[str] = Field(default=None)
 
 
 class LensInsight(LensInsightBase, table=True):
@@ -538,8 +538,8 @@ class LensInsight(LensInsightBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="lens_insights")
-    author: User | None = Relationship(back_populates="lens_insights")
+    idea: Optional[Idea] = Relationship(back_populates="lens_insights")
+    author: Optional[User] = Relationship(back_populates="lens_insights")
 
 
 class LensInsightPublic(LensInsightBase):
@@ -554,9 +554,9 @@ class LensInsightPublic(LensInsightBase):
 class VCThesisComparisonBase(SQLModel):
     title: str = Field(max_length=255)
     content: str = Field(sa_column=Column(Text))
-    vc_firm: str | None = Field(default=None, max_length=255)
-    thesis_alignment_score: float | None = Field(default=None)
-    notes: str | None = Field(default=None, sa_column=Column(Text))
+    vc_firm: Optional[str] = Field(default=None, max_length=255)
+    thesis_alignment_score: Optional[float] = Field(default=None)
+    notes: Optional[str] = Field(default=None, sa_column=Column(Text))
 
 
 class VCThesisComparisonCreate(VCThesisComparisonBase):
@@ -564,11 +564,11 @@ class VCThesisComparisonCreate(VCThesisComparisonBase):
 
 
 class VCThesisComparisonUpdate(VCThesisComparisonBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    vc_firm: str | None = Field(default=None, max_length=255)
-    thesis_alignment_score: float | None = Field(default=None)
-    notes: str | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    vc_firm: Optional[str] = Field(default=None, max_length=255)
+    thesis_alignment_score: Optional[float] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
 
 
 class VCThesisComparison(VCThesisComparisonBase, table=True):
@@ -578,8 +578,8 @@ class VCThesisComparison(VCThesisComparisonBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="vc_thesis_comparisons")
-    author: User | None = Relationship(back_populates="vc_thesis_comparisons")
+    idea: Optional[Idea] = Relationship(back_populates="vc_thesis_comparisons")
+    author: Optional[User] = Relationship(back_populates="vc_thesis_comparisons")
 
 
 class VCThesisComparisonPublic(VCThesisComparisonBase):
@@ -604,11 +604,11 @@ class InvestorDeckCreate(InvestorDeckBase):
 
 
 class InvestorDeckUpdate(InvestorDeckBase):
-    title: str | None = Field(default=None, max_length=255)
-    content: str | None = Field(default=None)
-    deck_type: str | None = Field(default=None, max_length=100)
-    version: int | None = Field(default=None)
-    is_finalized: bool | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    content: Optional[str] = Field(default=None)
+    deck_type: Optional[str] = Field(default=None, max_length=100)
+    version: Optional[int] = Field(default=None)
+    is_finalized: Optional[bool] = Field(default=None)
 
 
 class InvestorDeck(InvestorDeckBase, table=True):
@@ -618,8 +618,8 @@ class InvestorDeck(InvestorDeckBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="investor_decks")
-    author: User | None = Relationship(back_populates="investor_decks")
+    idea: Optional[Idea] = Relationship(back_populates="investor_decks")
+    author: Optional[User] = Relationship(back_populates="investor_decks")
 
 
 class InvestorDeckPublic(InvestorDeckBase):
@@ -633,7 +633,7 @@ class InvestorDeckPublic(InvestorDeckBase):
 # IdeaCollaborator model
 class IdeaCollaboratorBase(SQLModel):
     role: str = Field(max_length=100)  # e.g., "viewer", "editor", "admin"
-    permissions: str | None = Field(default=None, max_length=500)  # JSON string of permissions
+    permissions: Optional[str] = Field(default=None, max_length=500)  # JSON string of permissions
 
 
 class IdeaCollaboratorCreate(IdeaCollaboratorBase):
@@ -641,8 +641,8 @@ class IdeaCollaboratorCreate(IdeaCollaboratorBase):
 
 
 class IdeaCollaboratorUpdate(IdeaCollaboratorBase):
-    role: str | None = Field(default=None, max_length=100)
-    permissions: str | None = Field(default=None, max_length=500)
+    role: Optional[str] = Field(default=None, max_length=100)
+    permissions: Optional[str] = Field(default=None, max_length=500)
 
 
 class IdeaCollaborator(IdeaCollaboratorBase, table=True):
@@ -653,9 +653,9 @@ class IdeaCollaborator(IdeaCollaboratorBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="collaborators")
-    user: User | None = Relationship(back_populates="idea_collaborations")
-    inviter: User | None = Relationship(back_populates="sent_idea_invitations")
+    idea: Optional[Idea] = Relationship(back_populates="collaborators")
+    user: Optional[User] = Relationship(back_populates="idea_collaborations", sa_relationship_kwargs={"foreign_keys": "[IdeaCollaborator.user_id]"})
+    inviter: Optional[User] = Relationship(back_populates="sent_idea_invitations", sa_relationship_kwargs={"foreign_keys": "[IdeaCollaborator.invited_by]"})
 
 
 class IdeaCollaboratorPublic(IdeaCollaboratorBase):
@@ -673,7 +673,7 @@ class IdeaChangeProposalBase(SQLModel):
     description: str = Field(sa_column=Column(Text))
     proposed_changes: str = Field(sa_column=Column(Text))  # JSON string of changes
     status: str = Field(default="pending", max_length=50)  # pending, approved, rejected
-    reason: str | None = Field(default=None, sa_column=Column(Text))
+    reason: Optional[str] = Field(default=None, sa_column=Column(Text))
 
 
 class IdeaChangeProposalCreate(IdeaChangeProposalBase):
@@ -681,31 +681,31 @@ class IdeaChangeProposalCreate(IdeaChangeProposalBase):
 
 
 class IdeaChangeProposalUpdate(IdeaChangeProposalBase):
-    title: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None)
-    proposed_changes: str | None = Field(default=None)
-    status: str | None = Field(default=None, max_length=50)
-    reason: str | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None)
+    proposed_changes: Optional[str] = Field(default=None)
+    status: Optional[str] = Field(default=None, max_length=50)
+    reason: Optional[str] = Field(default=None)
 
 
 class IdeaChangeProposal(IdeaChangeProposalBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     idea_id: uuid.UUID = Field(foreign_key="idea.id", nullable=False, ondelete="CASCADE")
     proposer_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    reviewer_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
+    reviewer_id: Optional[uuid.UUID] = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="change_proposals")
-    proposer: User | None = Relationship(back_populates="proposed_changes")
-    reviewer: User | None = Relationship(back_populates="reviewed_changes")
+    idea: Optional[Idea] = Relationship(back_populates="change_proposals")
+    proposer: Optional[User] = Relationship(back_populates="proposed_changes", sa_relationship_kwargs={"foreign_keys": "[IdeaChangeProposal.proposer_id]"})
+    reviewer: Optional[User] = Relationship(back_populates="reviewed_changes", sa_relationship_kwargs={"foreign_keys": "[IdeaChangeProposal.reviewer_id]"})
 
 
 class IdeaChangeProposalPublic(IdeaChangeProposalBase):
     id: uuid.UUID
     idea_id: uuid.UUID
     proposer_id: uuid.UUID
-    reviewer_id: uuid.UUID | None
+    reviewer_id: Optional[uuid.UUID]
     created_at: datetime
     updated_at: datetime
 
@@ -721,21 +721,21 @@ class CommentCreate(CommentBase):
 
 
 class CommentUpdate(CommentBase):
-    content: str | None = Field(default=None)
-    is_edited: bool | None = Field(default=None)
+    content: Optional[str] = Field(default=None)
+    is_edited: Optional[bool] = Field(default=None)
 
 
 class Comment(CommentBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     idea_id: uuid.UUID = Field(foreign_key="idea.id", nullable=False, ondelete="CASCADE")
     author_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    parent_id: uuid.UUID | None = Field(foreign_key="comment.id", nullable=True, ondelete="CASCADE")
+    parent_id: Optional[uuid.UUID] = Field(foreign_key="comment.id", nullable=True, ondelete="CASCADE")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="comments")
-    author: User | None = Relationship(back_populates="comments")
-    parent: "Comment" | None = Relationship(back_populates="replies", sa_relationship_kwargs={"remote_side": "Comment.id"})
+    idea: Optional[Idea] = Relationship(back_populates="comments")
+    author: Optional[User] = Relationship(back_populates="comments")
+    parent: Optional["Comment"] = Relationship(back_populates="replies", sa_relationship_kwargs={"remote_side": "Comment.id"})
     replies: list["Comment"] = Relationship(back_populates="parent")
 
 
@@ -743,7 +743,7 @@ class CommentPublic(CommentBase):
     id: uuid.UUID
     idea_id: uuid.UUID
     author_id: uuid.UUID
-    parent_id: uuid.UUID | None
+    parent_id: Optional[uuid.UUID]
     created_at: datetime
     updated_at: datetime
 
@@ -753,7 +753,7 @@ class InviteBase(SQLModel):
     email: EmailStr = Field(max_length=255)
     invite_type: str = Field(max_length=50)  # "team", "idea_collaboration"
     status: str = Field(default="pending", max_length=50)  # pending, accepted, rejected, expired
-    message: str | None = Field(default=None, max_length=1000)
+    message: Optional[str] = Field(default=None, max_length=1000)
 
 
 class InviteCreate(InviteBase):
@@ -761,32 +761,32 @@ class InviteCreate(InviteBase):
 
 
 class InviteUpdate(InviteBase):
-    email: EmailStr | None = Field(default=None, max_length=255)
-    invite_type: str | None = Field(default=None, max_length=50)
-    status: str | None = Field(default=None, max_length=50)
-    message: str | None = Field(default=None, max_length=1000)
+    email: Optional[EmailStr] = Field(default=None, max_length=255)
+    invite_type: Optional[str] = Field(default=None, max_length=50)
+    status: Optional[str] = Field(default=None, max_length=50)
+    message: Optional[str] = Field(default=None, max_length=1000)
 
 
 class Invite(InviteBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     inviter_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    team_id: uuid.UUID | None = Field(foreign_key="team.id", nullable=True, ondelete="CASCADE")
-    idea_id: uuid.UUID | None = Field(foreign_key="idea.id", nullable=True, ondelete="CASCADE")
+    team_id: Optional[uuid.UUID] = Field(foreign_key="team.id", nullable=True, ondelete="CASCADE")
+    idea_id: Optional[uuid.UUID] = Field(foreign_key="idea.id", nullable=True, ondelete="CASCADE")
     token: str = Field(max_length=255, unique=True)
     expires_at: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    inviter: User | None = Relationship(back_populates="sent_invites")
-    team: Team | None = Relationship(back_populates="invites")
-    idea: Idea | None = Relationship(back_populates="invites")
+    inviter: Optional[User] = Relationship(back_populates="sent_invites")
+    team: Optional[Team] = Relationship(back_populates="invites")
+    idea: Optional[Idea] = Relationship(back_populates="invites")
 
 
 class InvitePublic(InviteBase):
     id: uuid.UUID
     inviter_id: uuid.UUID
-    team_id: uuid.UUID | None
-    idea_id: uuid.UUID | None
+    team_id: Optional[uuid.UUID]
+    idea_id: Optional[uuid.UUID]
     expires_at: datetime
     created_at: datetime
     updated_at: datetime
@@ -795,7 +795,7 @@ class InvitePublic(InviteBase):
 # IdeaVersionQnA model
 class IdeaVersionQnABase(SQLModel):
     question: str = Field(sa_column=Column(Text))
-    answer: str | None = Field(default=None, sa_column=Column(Text))
+    answer: Optional[str] = Field(default=None, sa_column=Column(Text))
     question_type: str = Field(max_length=100)  # e.g., "technical", "market", "financial"
     priority: int = Field(default=1)  # 1-5 priority scale
 
@@ -805,10 +805,10 @@ class IdeaVersionQnACreate(IdeaVersionQnABase):
 
 
 class IdeaVersionQnAUpdate(IdeaVersionQnABase):
-    question: str | None = Field(default=None)
-    answer: str | None = Field(default=None)
-    question_type: str | None = Field(default=None, max_length=100)
-    priority: int | None = Field(default=None)
+    question: Optional[str] = Field(default=None)
+    answer: Optional[str] = Field(default=None)
+    question_type: Optional[str] = Field(default=None, max_length=100)
+    priority: Optional[int] = Field(default=None)
 
 
 class IdeaVersionQnA(IdeaVersionQnABase, table=True):
@@ -818,8 +818,8 @@ class IdeaVersionQnA(IdeaVersionQnABase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="version_qnas")
-    author: User | None = Relationship(back_populates="idea_qnas")
+    idea: Optional[Idea] = Relationship(back_populates="version_qnas")
+    author: Optional[User] = Relationship(back_populates="idea_qnas")
 
 
 class IdeaVersionQnAPublic(IdeaVersionQnABase):
@@ -835,10 +835,10 @@ class AuditLogBase(SQLModel):
     action: str = Field(max_length=255)
     entity_type: str = Field(max_length=100)
     entity_id: uuid.UUID
-    old_values: str | None = Field(default=None, sa_column=Column(Text))  # JSON string
-    new_values: str | None = Field(default=None, sa_column=Column(Text))  # JSON string
-    ip_address: str | None = Field(default=None, max_length=45)
-    user_agent: str | None = Field(default=None, max_length=500)
+    old_values: Optional[str] = Field(default=None, sa_column=Column(Text))  # JSON string
+    new_values: Optional[str] = Field(default=None, sa_column=Column(Text))  # JSON string
+    ip_address: Optional[str] = Field(default=None, max_length=45)
+    user_agent: Optional[str] = Field(default=None, max_length=500)
 
 
 class AuditLogCreate(AuditLogBase):
@@ -847,22 +847,22 @@ class AuditLogCreate(AuditLogBase):
 
 class AuditLog(AuditLogBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
+    user_id: Optional[uuid.UUID] = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="audit_logs")
+    user: Optional[User] = Relationship(back_populates="audit_logs")
 
 
 class AuditLogPublic(AuditLogBase):
     id: uuid.UUID
-    user_id: uuid.UUID | None
+    user_id: Optional[uuid.UUID]
     created_at: datetime
 
 
 # ProfileQnA model
 class ProfileQnABase(SQLModel):
     question: str = Field(sa_column=Column(Text))
-    answer: str | None = Field(default=None, sa_column=Column(Text))
+    answer: Optional[str] = Field(default=None, sa_column=Column(Text))
     category: str = Field(max_length=100)  # e.g., "skills", "experience", "preferences"
     is_public: bool = Field(default=True)
 
@@ -872,10 +872,10 @@ class ProfileQnACreate(ProfileQnABase):
 
 
 class ProfileQnAUpdate(ProfileQnABase):
-    question: str | None = Field(default=None)
-    answer: str | None = Field(default=None)
-    category: str | None = Field(default=None, max_length=100)
-    is_public: bool | None = Field(default=None)
+    question: Optional[str] = Field(default=None)
+    answer: Optional[str] = Field(default=None)
+    category: Optional[str] = Field(default=None, max_length=100)
+    is_public: Optional[bool] = Field(default=None)
 
 
 class ProfileQnA(ProfileQnABase, table=True):
@@ -884,7 +884,7 @@ class ProfileQnA(ProfileQnABase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="profile_qnas")
+    user: Optional[User] = Relationship(back_populates="profile_qnas")
 
 
 class ProfileQnAPublic(ProfileQnABase):
@@ -900,7 +900,7 @@ class NotificationBase(SQLModel):
     message: str = Field(sa_column=Column(Text))
     notification_type: str = Field(max_length=100)  # e.g., "idea_invite", "comment", "mention"
     is_read: bool = Field(default=False)
-    metadata: str | None = Field(default=None, sa_column=Column(Text))  # JSON string for additional data
+    extra_data: Optional[str] = Field(default=None, sa_column=Column(Text))  # JSON string for additional data
 
 
 class NotificationCreate(NotificationBase):
@@ -908,11 +908,11 @@ class NotificationCreate(NotificationBase):
 
 
 class NotificationUpdate(NotificationBase):
-    title: str | None = Field(default=None, max_length=255)
-    message: str | None = Field(default=None)
-    notification_type: str | None = Field(default=None, max_length=100)
-    is_read: bool | None = Field(default=None)
-    metadata: str | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    message: Optional[str] = Field(default=None)
+    notification_type: Optional[str] = Field(default=None, max_length=100)
+    is_read: Optional[bool] = Field(default=None)
+    extra_data: Optional[str] = Field(default=None)
 
 
 class Notification(NotificationBase, table=True):
@@ -921,7 +921,7 @@ class Notification(NotificationBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="notifications")
+    user: Optional[User] = Relationship(back_populates="notifications")
 
 
 class NotificationPublic(NotificationBase):
@@ -937,7 +937,7 @@ class ExportRecordBase(SQLModel):
     entity_type: str = Field(max_length=100)  # e.g., "idea", "profile", "team"
     entity_id: uuid.UUID
     file_name: str = Field(max_length=255)
-    file_size: int | None = Field(default=None)
+    file_size: Optional[int] = Field(default=None)
     status: str = Field(default="processing", max_length=50)  # processing, completed, failed
 
 
@@ -946,12 +946,12 @@ class ExportRecordCreate(ExportRecordBase):
 
 
 class ExportRecordUpdate(ExportRecordBase):
-    export_type: str | None = Field(default=None, max_length=100)
-    entity_type: str | None = Field(default=None, max_length=100)
-    entity_id: uuid.UUID | None = Field(default=None)
-    file_name: str | None = Field(default=None, max_length=255)
-    file_size: int | None = Field(default=None)
-    status: str | None = Field(default=None, max_length=50)
+    export_type: Optional[str] = Field(default=None, max_length=100)
+    entity_type: Optional[str] = Field(default=None, max_length=100)
+    entity_id: Optional[uuid.UUID] = Field(default=None)
+    file_name: Optional[str] = Field(default=None, max_length=255)
+    file_size: Optional[int] = Field(default=None)
+    status: Optional[str] = Field(default=None, max_length=50)
 
 
 class ExportRecord(ExportRecordBase, table=True):
@@ -960,7 +960,7 @@ class ExportRecord(ExportRecordBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="export_records")
+    user: Optional[User] = Relationship(back_populates="export_records")
 
 
 class ExportRecordPublic(ExportRecordBase):
@@ -976,8 +976,8 @@ class IterationBase(SQLModel):
     description: str = Field(sa_column=Column(Text))
     version: int = Field(default=1)
     status: str = Field(default="draft", max_length=50)  # draft, active, completed, archived
-    goals: str | None = Field(default=None, sa_column=Column(Text))
-    outcomes: str | None = Field(default=None, sa_column=Column(Text))
+    goals: Optional[str] = Field(default=None, sa_column=Column(Text))
+    outcomes: Optional[str] = Field(default=None, sa_column=Column(Text))
 
 
 class IterationCreate(IterationBase):
@@ -985,12 +985,12 @@ class IterationCreate(IterationBase):
 
 
 class IterationUpdate(IterationBase):
-    title: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None)
-    version: int | None = Field(default=None)
-    status: str | None = Field(default=None, max_length=50)
-    goals: str | None = Field(default=None)
-    outcomes: str | None = Field(default=None)
+    title: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None)
+    version: Optional[int] = Field(default=None)
+    status: Optional[str] = Field(default=None, max_length=50)
+    goals: Optional[str] = Field(default=None)
+    outcomes: Optional[str] = Field(default=None)
 
 
 class Iteration(IterationBase, table=True):
@@ -1000,8 +1000,8 @@ class Iteration(IterationBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="iterations")
-    author: User | None = Relationship(back_populates="iterations")
+    idea: Optional[Idea] = Relationship(back_populates="iterations")
+    author: Optional[User] = Relationship(back_populates="iterations")
 
 
 class IterationPublic(IterationBase):
@@ -1018,8 +1018,8 @@ class SuggestedBase(SQLModel):
     entity_id: uuid.UUID
     suggestion_type: str = Field(max_length=100)  # e.g., "similar_idea", "potential_collaborator"
     score: float = Field(default=0.0)  # relevance/confidence score
-    reason: str | None = Field(default=None, sa_column=Column(Text))
-    metadata: str | None = Field(default=None, sa_column=Column(Text))  # JSON string
+    reason: Optional[str] = Field(default=None, sa_column=Column(Text))
+    extra_data: Optional[str] = Field(default=None, sa_column=Column(Text))  # JSON string
 
 
 class SuggestedCreate(SuggestedBase):
@@ -1027,12 +1027,12 @@ class SuggestedCreate(SuggestedBase):
 
 
 class SuggestedUpdate(SuggestedBase):
-    entity_type: str | None = Field(default=None, max_length=100)
-    entity_id: uuid.UUID | None = Field(default=None)
-    suggestion_type: str | None = Field(default=None, max_length=100)
-    score: float | None = Field(default=None)
-    reason: str | None = Field(default=None)
-    metadata: str | None = Field(default=None)
+    entity_type: Optional[str] = Field(default=None, max_length=100)
+    entity_id: Optional[uuid.UUID] = Field(default=None)
+    suggestion_type: Optional[str] = Field(default=None, max_length=100)
+    score: Optional[float] = Field(default=None)
+    reason: Optional[str] = Field(default=None)
+    extra_data: Optional[str] = Field(default=None)
 
 
 class Suggested(SuggestedBase, table=True):
@@ -1040,7 +1040,7 @@ class Suggested(SuggestedBase, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="suggestions")
+    user: Optional[User] = Relationship(back_populates="suggestions")
 
 
 class SuggestedPublic(SuggestedBase):
@@ -1053,9 +1053,9 @@ class SuggestedPublic(SuggestedBase):
 class IteratingBase(SQLModel):
     current_stage: str = Field(max_length=100)  # e.g., "research", "prototype", "validation"
     progress_percentage: float = Field(default=0.0)
-    notes: str | None = Field(default=None, sa_column=Column(Text))
-    next_steps: str | None = Field(default=None, sa_column=Column(Text))
-    blockers: str | None = Field(default=None, sa_column=Column(Text))
+    notes: Optional[str] = Field(default=None, sa_column=Column(Text))
+    next_steps: Optional[str] = Field(default=None, sa_column=Column(Text))
+    blockers: Optional[str] = Field(default=None, sa_column=Column(Text))
 
 
 class IteratingCreate(IteratingBase):
@@ -1063,11 +1063,11 @@ class IteratingCreate(IteratingBase):
 
 
 class IteratingUpdate(IteratingBase):
-    current_stage: str | None = Field(default=None, max_length=100)
-    progress_percentage: float | None = Field(default=None)
-    notes: str | None = Field(default=None)
-    next_steps: str | None = Field(default=None)
-    blockers: str | None = Field(default=None)
+    current_stage: Optional[str] = Field(default=None, max_length=100)
+    progress_percentage: Optional[float] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    next_steps: Optional[str] = Field(default=None)
+    blockers: Optional[str] = Field(default=None)
 
 
 class Iterating(IteratingBase, table=True):
@@ -1077,8 +1077,8 @@ class Iterating(IteratingBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    idea: Idea | None = Relationship(back_populates="iterating_records")
-    user: User | None = Relationship(back_populates="iterating_records")
+    idea: Optional[Idea] = Relationship(back_populates="iterating_records")
+    user: Optional[User] = Relationship(back_populates="iterating_records")
 
 
 class IteratingPublic(IteratingBase):
@@ -1093,9 +1093,9 @@ class IteratingPublic(IteratingBase):
 class LLMInputLogBase(SQLModel):
     input_text: str = Field(sa_column=Column(Text))
     input_type: str = Field(max_length=100)  # e.g., "idea_generation", "content_enhancement"
-    model_name: str | None = Field(default=None, max_length=100)
-    parameters: str | None = Field(default=None, sa_column=Column(Text))  # JSON string
-    context: str | None = Field(default=None, sa_column=Column(Text))  # JSON string
+    model_name: Optional[str] = Field(default=None, max_length=100)
+    parameters: Optional[str] = Field(default=None, sa_column=Column(Text))  # JSON string
+    context: Optional[str] = Field(default=None, sa_column=Column(Text))  # JSON string
 
 
 class LLMInputLogCreate(LLMInputLogBase):
@@ -1104,29 +1104,29 @@ class LLMInputLogCreate(LLMInputLogBase):
 
 class LLMInputLog(LLMInputLogBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
-    session_id: str | None = Field(default=None, max_length=255)
+    user_id: Optional[uuid.UUID] = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
+    session_id: Optional[str] = Field(default=None, max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    user: User | None = Relationship(back_populates="llm_input_logs")
+    user: Optional[User] = Relationship(back_populates="llm_input_logs")
     processing_logs: list["LLMProcessingLog"] = Relationship(back_populates="input_log")
 
 
 class LLMInputLogPublic(LLMInputLogBase):
     id: uuid.UUID
-    user_id: uuid.UUID | None
-    session_id: str | None
+    user_id: Optional[uuid.UUID]
+    session_id: Optional[str]
     created_at: datetime
 
 
 # LLMProcessingLog model
 class LLMProcessingLogBase(SQLModel):
-    output_text: str | None = Field(default=None, sa_column=Column(Text))
+    output_text: Optional[str] = Field(default=None, sa_column=Column(Text))
     status: str = Field(default="processing", max_length=50)  # processing, completed, failed
-    error_message: str | None = Field(default=None, sa_column=Column(Text))
-    processing_time_ms: int | None = Field(default=None)
-    tokens_used: int | None = Field(default=None)
-    cost: float | None = Field(default=None)
+    error_message: Optional[str] = Field(default=None, sa_column=Column(Text))
+    processing_time_ms: Optional[int] = Field(default=None)
+    tokens_used: Optional[int] = Field(default=None)
+    cost: Optional[float] = Field(default=None)
 
 
 class LLMProcessingLogCreate(LLMProcessingLogBase):
@@ -1134,12 +1134,12 @@ class LLMProcessingLogCreate(LLMProcessingLogBase):
 
 
 class LLMProcessingLogUpdate(LLMProcessingLogBase):
-    output_text: str | None = Field(default=None)
-    status: str | None = Field(default=None, max_length=50)
-    error_message: str | None = Field(default=None)
-    processing_time_ms: int | None = Field(default=None)
-    tokens_used: int | None = Field(default=None)
-    cost: float | None = Field(default=None)
+    output_text: Optional[str] = Field(default=None)
+    status: Optional[str] = Field(default=None, max_length=50)
+    error_message: Optional[str] = Field(default=None)
+    processing_time_ms: Optional[int] = Field(default=None)
+    tokens_used: Optional[int] = Field(default=None)
+    cost: Optional[float] = Field(default=None)
 
 
 class LLMProcessingLog(LLMProcessingLogBase, table=True):
@@ -1148,7 +1148,7 @@ class LLMProcessingLog(LLMProcessingLogBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    input_log: LLMInputLog | None = Relationship(back_populates="processing_logs")
+    input_log: Optional[LLMInputLog] = Relationship(back_populates="processing_logs")
 
 
 class LLMProcessingLogPublic(LLMProcessingLogBase):
