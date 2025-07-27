@@ -1091,6 +1091,8 @@ class IteratingPublic(IteratingBase):
 
 # LLMInputLog model
 class LLMInputLogBase(SQLModel):
+    model_config = {'protected_namespaces': ()}
+    
     input_text: str = Field(sa_column=Column(Text))
     input_type: str = Field(max_length=100)  # e.g., "idea_generation", "content_enhancement"
     model_name: Optional[str] = Field(default=None, max_length=100)
