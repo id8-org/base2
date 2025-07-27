@@ -2,6 +2,10 @@
 
 This document provides an overview of the comprehensive database models implemented for the idea management platform.
 
+## Database Initialization
+
+**Note**: This project does not use Alembic for database migrations. Instead, database tables are created directly from the SQLModel definitions in this file. See [DATABASE_INIT.md](DATABASE_INIT.md) for details on how database initialization works.
+
 ## Model Structure
 
 ### Core Models
