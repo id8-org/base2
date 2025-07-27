@@ -3,6 +3,14 @@ from unittest.mock import MagicMock, patch
 from sqlmodel import select
 
 from app.backend_pre_start import init, logger
+from sqlalchemy import create_engine, inspect
+
+def test_team_and_team_member_tables_exist():
+    engine = create_engine("postgresql://user:password@localhost/dbname")
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    assert 'team' in tables, "Team table should exist."
+    assert 'team_member' in tables, "TeamMember table should exist."
 
 
 def test_init_successful_connection() -> None:
